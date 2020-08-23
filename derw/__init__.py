@@ -5,4 +5,4 @@ https://github.com/notderw/python-util
 
 """
 
-from .logging import log
+from .logging import makeLogger

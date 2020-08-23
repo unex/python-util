@@ -1,6 +1,9 @@
-from derw import log
+import logging
+from derw import makeLogger
 
-# log.setLevel(logging.INFO)
+log = makeLogger(__name__)
+log.setLevel(logging.DEBUG)
+
 
 log.debug("DEBUG")
 log.info("INFO")

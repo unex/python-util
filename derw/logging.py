@@ -1,12 +1,16 @@
 import sys
 import __main__
 import traceback
+
+from copy import copy
+
 import logging
 from logging.handlers import RotatingFileHandler
+
 import colorama
 from colorama import Back, Fore, Style
 
-colorama.init()
+FORMAT = "[%(asctime)s][%(levelname)8s] %(message)s"
 
 COLORS = {
     'WARNING': Fore.YELLOW,
@@ -17,37 +21,36 @@ COLORS = {
 }
 
 class ColoredFormatter(logging.Formatter):
-    def __init__(self, msg, use_color = True):
-        logging.Formatter.__init__(self, msg, "%Y%m%d %H:%M:%S")
-        self.use_color = use_color
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.use_color = kwargs.get('use_color', True)
 
     def format(self, record):
+        record = copy(record) # if we modify the original it will mess up all other formatters that use the same level name
         levelname = record.levelname
         if self.use_color and levelname in COLORS:
-            record.levelname = f'[{COLORS[levelname]}{levelname}{Style.RESET_ALL}]{" " * (8 - len(levelname))}'
-        return logging.Formatter.format(self, record)
+            record.levelname = f'{COLORS[levelname]}{levelname:>8s}{Style.RESET_ALL}'
+        return super().format(record)
 
-class ColoredLogger(logging.Logger):
-    COLOR_FORMAT = f'[%(asctime)s]%(levelname)s %(message)s{Style.RESET_ALL}'
-    def __init__(self, name):
-        logging.Logger.__init__(self, name, logging.DEBUG)
 
-        color_formatter = ColoredFormatter(self.COLOR_FORMAT)
+def makeLogger(name):
+    color_formatter = ColoredFormatter(f'{FORMAT}{Style.RESET_ALL}', '%Y-%m-%d %H:%M:%S')
+    formatter = logging.Formatter(FORMAT, '%Y-%m-%d %H:%M:%S')
 
-        console = logging.StreamHandler()
-        console.setFormatter(color_formatter)
-        self.addHandler(console)
+    log = logging.getLogger(name)
 
-        file = RotatingFileHandler(__main__.__file__ + '.log', mode='a', maxBytes=5*1024*1024, backupCount=0, encoding=None, delay=0)
-        file.setFormatter(color_formatter)
-        self.addHandler(file)
+    console = logging.StreamHandler()
+    console.setFormatter(color_formatter)
+    log.addHandler(console)
 
-        return
+    file = RotatingFileHandler(__main__.__file__ + '.log', mode='a', maxBytes=5*1024*1024, backupCount=0, encoding=None, delay=0)
+    file.setFormatter(formatter)
+    file.setLevel(logging.DEBUG)
+    log.addHandler(file)
 
-logging.setLoggerClass(ColoredLogger)
-log = logging.getLogger(__name__)
+    def except_handler(type, value, tb):
+        log.critical("FATAL ERROR:\n{1}, Traceback:\n{0}\n{2}".format(''.join(traceback.format_tb(tb)), str(type.__name__), value))
 
-def except_handler(type, value, tb):
-    log.critical("FATAL ERROR:\n{1}, Traceback:\n{0}\n{2}".format(''.join(traceback.format_tb(tb)), str(type.__name__), value))
+    sys.excepthook = except_handler
 
-sys.excepthook = except_handler
+    return log

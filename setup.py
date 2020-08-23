@@ -7,7 +7,7 @@ with open('requirements.txt') as f:
 setup(
     name="derw",
     author="notderw",
-    version="0.0.1",
+    version="0.0.2",
     description="Misc tools for other stuff",
     url="https://github.com/notderw/python-util",
     install_requires=requirements,
