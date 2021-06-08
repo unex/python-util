@@ -33,7 +33,7 @@ class ColoredFormatter(logging.Formatter):
         return super().format(record)
 
 
-def makeLogger(name):
+def makeLogger(name, level = logging.INFO):
     color_formatter = ColoredFormatter(f'{FORMAT}{Style.RESET_ALL}', '%Y-%m-%d %H:%M:%S')
     formatter = logging.Formatter(FORMAT, '%Y-%m-%d %H:%M:%S')
 
@@ -41,6 +41,7 @@ def makeLogger(name):
 
     console = logging.StreamHandler()
     console.setFormatter(color_formatter)
+    console.setLevel(level)
     log.addHandler(console)
 
     file = RotatingFileHandler(__main__.__file__ + '.log', mode='a', maxBytes=5*1024*1024, backupCount=0, encoding=None, delay=0)
